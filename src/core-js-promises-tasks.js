@@ -82,9 +82,18 @@ function getFirstResolvedPromiseResult(promises) {
  * [promise3, promise4, promise6] => Promise rejected with 6
  */
 function getFirstPromiseResult(promises) {
-  return Promise.race(promises)
-    .then((result) => result)
-    .catch((err) => err);
+  return new Promise((resolve, reject) => {
+    let rejectionCount = 0;
+
+    promises.forEach((p) => {
+      p.then(resolve).catch(() => {
+        rejectionCount += 1;
+        if (rejectionCount === promises.length) {
+          reject(new Error('All promises were rejected'));
+        }
+      });
+    });
+  });
 }
 
 /**
@@ -141,9 +150,9 @@ function getAllResult(promises) {
  * [promise1, promise4, promise3, promise2] => Promise.resolved('10403020')
  */
 function queuePromises(promises) {
-  return promises.reduce((acc, promise) => {
+  return promises.reduce((acc, currPromise) => {
     return acc.then((result) =>
-      promise.then((value) => result + String(value))
+      currPromise.then((value) => result + value.toString())
     );
   }, Promise.resolve(''));
 }
